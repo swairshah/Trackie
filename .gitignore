@@ -1,0 +1,30 @@
+# Swift / SwiftPM
+.build/
+.swiftpm/
+Package.resolved
+*.xcodeproj/
+*.xcworkspace/
+DerivedData/
+*.swiftdeps
+*.swiftmodule
+*.swiftsourceinfo
+*.o
+*.d
+*.dia
+
+# macOS
+.DS_Store
+._*
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Trackie runtime state (lives in ~/Library/Application Support/Trackie,
+# but ignore any stray copies in the project tree).
+items.json
+
+# Generated icon intermediate folder (kept only as a one-shot build output).
+Resources/icons/AppIcon.iconset/
