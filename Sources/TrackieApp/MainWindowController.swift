@@ -1,16 +1,26 @@
 import AppKit
 import SwiftUI
+import Combine
 
+/// Owns the lifecycle of the main window and the currently selected item.
+/// The selection is exposed as a published property so the menubar can ask
+/// the window to open with a specific item focused.
 @MainActor
-final class MainWindowController {
+final class MainWindowController: ObservableObject {
     static let shared = MainWindowController()
+
+    @Published var selection: UUID?
 
     private var window: NSWindow?
     private var delegate: WindowDelegate?
 
     private init() {}
 
-    func show() {
+    /// Open (or raise) the main window. If `select` is non-nil the item
+    /// becomes the window's current selection.
+    func show(select id: UUID? = nil) {
+        if let id { selection = id }
+
         if let window {
             window.makeKeyAndOrderFront(nil)
             NSApp.setActivationPolicy(.regular)
@@ -18,7 +28,7 @@ final class MainWindowController {
             return
         }
 
-        let contentView = MainWindowView(store: QueueStore.shared)
+        let contentView = MainWindowView(store: QueueStore.shared, controller: self)
         let hosting = NSHostingView(rootView: contentView)
 
         let window = NSWindow(

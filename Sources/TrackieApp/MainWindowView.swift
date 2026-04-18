@@ -4,10 +4,17 @@ import TrackieClient
 
 struct MainWindowView: View {
     @ObservedObject var store: QueueStore
+    @ObservedObject var controller: MainWindowController
     @State private var newTitle: String = ""
     @State private var newProject: String = ""
-    @State private var selection: UUID?
     @State private var showScratched = false
+
+    private var selectionBinding: Binding<UUID?> {
+        Binding(
+            get: { controller.selection },
+            set: { controller.selection = $0 }
+        )
+    }
 
     var body: some View {
         HStack(spacing: 0) {
@@ -36,7 +43,7 @@ struct MainWindowView: View {
             .padding(.top, 14)
             .padding(.bottom, 8)
 
-            List(selection: $selection) {
+            List(selection: selectionBinding) {
                 Section {
                     ForEach(pendingItems) { item in
                         row(item: item)
@@ -165,7 +172,7 @@ struct MainWindowView: View {
 
     private var detail: some View {
         Group {
-            if let id = selection, let item = store.item(id: id) {
+            if let id = controller.selection, let item = store.item(id: id) {
                 DetailEditor(item: item, store: store)
                     .id(id)
             } else {

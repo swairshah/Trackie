@@ -243,6 +243,12 @@ private struct MenuItemRow: View {
         )
         .contentShape(Rectangle())
         .onHover { hovering = $0 }
+        // Double-click opens the full window and focuses this item. We
+        // attach tapCount:2 before tapCount:1 so the single-tap handler
+        // (nothing yet, but room to grow) doesn't swallow the double.
+        .onTapGesture(count: 2) {
+            MainWindowController.shared.show(select: item.id)
+        }
     }
 
     private var checkSymbol: String {

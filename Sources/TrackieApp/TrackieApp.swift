@@ -74,11 +74,11 @@ struct MenuBarLabel: View {
         // what was making the icon look blurry. Both reps share the same
         // *point* size (22×22); the @2x rep has a 44×44 pixel buffer that
         // macOS picks up on retina displays for crisp rendering.
-        rep1x.size = NSSize(width: 22, height: 22)
-        let image = NSImage(size: NSSize(width: 22, height: 22))
+        rep1x.size = NSSize(width: 26, height: 26)
+        let image = NSImage(size: NSSize(width: 26, height: 26))
         image.addRepresentation(rep1x)
         if let url2x = find("menubar@2x"), let rep2x = bitmapRep(from: url2x) {
-            rep2x.size = NSSize(width: 22, height: 22)
+            rep2x.size = NSSize(width: 26, height: 26)
             image.addRepresentation(rep2x)
         }
         image.isTemplate = true
