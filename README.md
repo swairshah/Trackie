@@ -6,8 +6,7 @@ __Your personal issue tracker that you and your coding agents share.__
 brew install --cask swairshah/tap/trackie
 ```
 
-A tiny menubar app (plus a `trackie` CLI) that gives every coding agent on
-your machine — Codex, Cursor, Claude Code, Aider, pyd.ev, anything — the same
+A tiny menubar app (plus a `trackie` CLI) that gives every coding agents like Codex, Cursor, Claude Code, pi.dev etc. the same
 place to push work, check what's open, and mark things done.
 
 ## What is it?
@@ -16,7 +15,7 @@ Trackie is a single shared to-do list that lives in your menubar.
 
 - Any coding agent can **push** new items as it discovers them ("flaky test in
   `auth_test.py`", "refactor the broker", "follow-up on the review comment")
-- You and any agent can **see** the full backlog, reorder it, or mark things
+- You and any agent can see the full backlog, reorder it, or mark things
   done
 - Items carry along where they came from — which agent/session filed it, what
   project it belongs to, any note the agent left behind — so when you come
