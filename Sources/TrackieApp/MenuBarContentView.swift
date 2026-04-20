@@ -7,6 +7,7 @@ struct MenuBarContentView: View {
     @State private var newTitle: String = ""
     @State private var filter: Filter = .recent
     @State private var expanded: Bool = false
+    @AppStorage("persistDockIcon") private var persistDockIcon: Bool = false
     @FocusState private var inputFocused: Bool
 
     enum Filter: String, CaseIterable, Identifiable {
@@ -177,6 +178,29 @@ struct MenuBarContentView: View {
             }
             .buttonStyle(.plain)
             .help(expanded ? "Show less" : "Show more")
+
+            // Toggle whether Trackie keeps its dock icon on. Flipping it ON
+            // also opens the main window — without a window the dock icon
+            // has nothing to click to, so pairing the two matches the
+            // standard "this is a regular app now" expectation.
+            Button {
+                persistDockIcon.toggle()
+                DockIconManager.apply(persistDockIcon: persistDockIcon)
+                if persistDockIcon {
+                    MainWindowController.shared.show()
+                }
+            } label: {
+                Image(systemName: persistDockIcon ? "dock.rectangle" : "menubar.rectangle")
+                    .font(.system(size: 10))
+                    .foregroundStyle(persistDockIcon ? Color.accentColor : .secondary)
+                    .frame(width: 18, height: 18)
+                    .background(
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(Color.primary.opacity(0.07))
+                    )
+            }
+            .buttonStyle(.plain)
+            .help(persistDockIcon ? "Dock icon: visible (click to hide)" : "Dock icon: hidden (click to show)")
 
             Spacer()
 

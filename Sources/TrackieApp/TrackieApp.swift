@@ -94,8 +94,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         signal(SIGPIPE, SIG_IGN)
         AppDelegate.shared = self
 
-        // Start as accessory (menubar-only). Main window will flip to regular when opened.
-        NSApp.setActivationPolicy(.accessory)
+        // Respect the user's persisted dock-icon preference. When the pref
+        // is off we start as an accessory (menubar-only); DockIconManager
+        // flips to .regular whenever the main window opens.
+        DockIconManager.apply(mainWindowVisible: false)
+
+        // If the user has pinned the dock icon, open the main window at
+        // launch — a visible dock icon with no window to click to is
+        // confusing ("why is it in my dock if nothing happens when I
+        // click?"). With the window open, clicking the dock raises it.
+        if DockIconManager.persistDockIcon {
+            DispatchQueue.main.async {
+                MainWindowController.shared.show()
+            }
+        }
 
         do {
             let broker = try Broker(port: TrackieDefaults.brokerPort, store: QueueStore.shared)
@@ -109,6 +121,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             alert.alertStyle = .warning
             alert.runModal()
         }
+    }
+
+    /// Called when the user clicks the dock icon. If there's a window we
+    /// raise it; otherwise we open a new one. Returning `true` keeps the
+    /// default bring-to-front behaviour on top of our handling.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if !flag {
+            MainWindowController.shared.show()
+        } else {
+            // There's a window somewhere — deminiaturise / raise it in case
+            // the user minimised it but still expects the dock-click to
+            // bring it back.
+            MainWindowController.shared.showExisting()
+        }
+        return true
     }
 
     func applicationWillTerminate(_ notification: Notification) {

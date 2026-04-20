@@ -16,6 +16,21 @@ final class MainWindowController: ObservableObject {
 
     private init() {}
 
+    /// Raise an existing window if we have one. Used by
+    /// `applicationShouldHandleReopen` — clicking the dock icon shouldn't
+    /// create a new window if one is already around, just bring it
+    /// forward and de-minimise it if necessary.
+    func showExisting() {
+        guard let window else {
+            show()
+            return
+        }
+        if window.isMiniaturized { window.deminiaturize(nil) }
+        window.makeKeyAndOrderFront(nil)
+        DockIconManager.apply(mainWindowVisible: true)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
     /// Open (or raise) the main window. If `select` is non-nil the item
     /// becomes the window's current selection.
     func show(select id: UUID? = nil) {
@@ -23,7 +38,7 @@ final class MainWindowController: ObservableObject {
 
         if let window {
             window.makeKeyAndOrderFront(nil)
-            NSApp.setActivationPolicy(.regular)
+            DockIconManager.apply(mainWindowVisible: true)
             NSApp.activate(ignoringOtherApps: true)
             return
         }
@@ -48,13 +63,13 @@ final class MainWindowController: ObservableObject {
         let delegate = WindowDelegate { [weak self] in
             self?.window = nil
             self?.delegate = nil
-            NSApp.setActivationPolicy(.accessory)
+            DockIconManager.apply(mainWindowVisible: false)
         }
         window.delegate = delegate
         self.delegate = delegate
         self.window = window
 
-        NSApp.setActivationPolicy(.regular)
+        DockIconManager.apply(mainWindowVisible: true)
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }
