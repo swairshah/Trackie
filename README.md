@@ -81,6 +81,35 @@ about Trackie's internals. You stay in the loop by glancing at the menubar.
 
 Point your agent at the same commands and it'll start filing work for you.
 
+### Teaching your agents about Trackie
+
+There's no cross-agent standard for "here are the tools available", but each
+popular coding agent reads a conventional file:
+
+| Agent | File it reads |
+|-------|---------------|
+| Claude Code | `CLAUDE.md` (project) or `~/.claude/CLAUDE.md` (global) |
+| Codex / Aider / most OpenAI tooling | `AGENTS.md` |
+| Cursor | `.cursor/rules/*.mdc` |
+| pi.dev / other | usually either of the above |
+
+Run this once in any repo — or with `--global` once per machine — and
+Trackie will drop a short "how to use me" block into every convention file
+it finds:
+
+```bash
+trackie install-agent-context              # updates whichever of the above files already exist in cwd
+trackie install-agent-context --global     # drops the block into home-level configs
+trackie install-agent-context --dry-run    # preview what would change
+```
+
+The block is demarcated by `<!-- trackie:agent-context -->` markers so
+re-running the command refreshes it in place instead of duplicating it.
+
+The canonical copy of the snippet lives at
+[docs/agent-context.md](docs/agent-context.md) if you'd rather paste it by
+hand.
+
 ## First launch
 
 - Click the menubar icon to open the dropdown

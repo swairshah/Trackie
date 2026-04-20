@@ -33,6 +33,13 @@ COMMANDS:
     clear                       Clear completed + scratched items
     clear --all                 Clear EVERYTHING (destructive)
 
+    install-agent-context       Write the Trackie "how to use me" block into
+                                CLAUDE.md / AGENTS.md / .cursor/rules/ so any
+                                agent running in this directory knows Trackie
+                                is available.
+        -g, --global            Target home-level configs instead of cwd
+        --dry-run               Print what would change without writing
+
 GLOBAL OPTIONS:
     --host <HOST>               Broker host (default: 127.0.0.1)
     --port <PORT>               Broker port (default: \(TrackieDefaults.brokerPort))
@@ -71,6 +78,8 @@ struct ParsedArgs {
     var quiet = false
     var help = false
     var title: String?
+    var global = false
+    var dryRun = false
 }
 
 func parseArgs() -> ParsedArgs {
@@ -136,6 +145,10 @@ func parseArgs() -> ParsedArgs {
             p.json = true
         case "-q", "--quiet":
             p.quiet = true
+        case "-g", "--global":
+            p.global = true
+        case "--dry-run":
+            p.dryRun = true
         default:
             if a.hasPrefix("-") {
                 FileHandle.standardError.write("Unknown option: \(a)\n".data(using: .utf8)!)
@@ -361,6 +374,9 @@ func run() async {
         } catch {
             die("broker unreachable: \(error.localizedDescription)", code: 2)
         }
+
+    case "install-agent-context", "install-agent":
+        installAgentContext(global: args.global, dryRun: args.dryRun, quiet: args.quiet)
 
     default:
         FileHandle.standardError.write("Unknown command: \(args.command)\n\n".data(using: .utf8)!)
