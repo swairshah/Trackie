@@ -1,4 +1,4 @@
-<h1>  <img src="assets/icon_128.png" alt="Trackie icon" width="30"/> Trackie</h1>
+<h1>  <img src="assets/icon_128.png" alt="Trackie icon" width="39"/> Trackie</h1>
 
 __Your personal issue tracker that you and your coding agents share.__
 
