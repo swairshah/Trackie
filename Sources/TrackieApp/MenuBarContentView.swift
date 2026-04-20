@@ -64,13 +64,14 @@ struct MenuBarContentView: View {
     // MARK: - Header
 
     private var header: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 4) {
             Image(systemName: "rectangle.stack")
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(.secondary)
             Text("Trackie")
                 .font(.system(size: 13, weight: .semibold))
-            Spacer()
+                .fixedSize(horizontal: true, vertical: false)
+            Spacer(minLength: 4)
             Picker("", selection: $filter) {
                 ForEach(Filter.segmentCases) { f in
                     Text(f.rawValue).tag(f)
@@ -78,16 +79,16 @@ struct MenuBarContentView: View {
             }
             .pickerStyle(.segmented)
             .labelsHidden()
-            .frame(width: 220)
+            .frame(width: 200)
             .controlSize(.small)
 
             Button {
                 filter = (filter == .trashed) ? .recent : .trashed
             } label: {
                 Image(systemName: filter == .trashed ? "trash.fill" : "trash")
-                    .font(.system(size: 12))
+                    .font(.system(size: 11))
                     .foregroundStyle(filter == .trashed ? .primary : .secondary)
-                    .frame(width: 22, height: 20)
+                    .frame(width: 18, height: 18)
                     .background(
                         RoundedRectangle(cornerRadius: 4, style: .continuous)
                             .fill(filter == .trashed ? Color.primary.opacity(0.12) : Color.clear)
