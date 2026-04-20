@@ -26,5 +26,8 @@ DerivedData/
 # but ignore any stray copies in the project tree).
 items.json
 
+# Release artifacts (DMGs, zips) — published via GitHub releases, not git.
+dist/
+
 # Generated icon intermediate folder (kept only as a one-shot build output).
 Resources/icons/AppIcon.iconset/
