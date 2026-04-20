@@ -174,11 +174,13 @@ final class Broker {
             }
             switch filter {
             case "all":
-                break
+                items = items.filter { $0.status != .trashed }
             case "done":
                 items = items.filter { $0.status == .done }
             case "scratched":
                 items = items.filter { $0.status == .scratched }
+            case "trashed", "trash":
+                items = items.filter { $0.status == .trashed }
             default:
                 items = items.filter { $0.status == .pending }
             }
@@ -194,8 +196,26 @@ final class Broker {
             guard let item = resolveItem(request: request) else {
                 return .failure("Item not found")
             }
+            let updated = store.setStatus(id: item.id, .trashed)
+            return .success(item: updated)
+
+        case "restore", "untrash":
+            guard let item = resolveItem(request: request) else {
+                return .failure("Item not found")
+            }
+            let updated = store.setStatus(id: item.id, .pending)
+            return .success(item: updated)
+
+        case "purge":
+            guard let item = resolveItem(request: request) else {
+                return .failure("Item not found")
+            }
             _ = store.remove(id: item.id)
             return .success(count: store.items.count)
+
+        case "empty-trash", "emptyTrash":
+            let removed = store.purgeTrashed()
+            return .success(count: removed)
 
         case "done":
             guard let item = resolveItem(request: request) else {

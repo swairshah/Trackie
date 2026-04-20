@@ -73,7 +73,13 @@ trackie done 3f8a           # mark done by id prefix
 trackie mv 3f8a top         # bump to the top of the queue
 trackie note 3f8a "follow-up: caching issue, see commit abc123"
 echo "more context" | trackie note 3f8a
-trackie rm 3f8a
+
+trackie rm 3f8a             # move to trash (recoverable)
+trackie list --trashed      # see what's in the trash
+trackie restore 3f8a        # bring it back
+trackie purge 3f8a          # permanently delete one item
+trackie empty-trash         # permanently empty the trash
+
 trackie clear               # drop everything that's done or scratched
 ```
 

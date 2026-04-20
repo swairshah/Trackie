@@ -177,10 +177,19 @@ final class QueueStore: ObservableObject {
         return items.first(where: { $0.id == id })
     }
 
-    /// Remove all scratched/done items; keep pending.
+    /// Remove all scratched/done items; keep pending and trashed.
     func clearCompleted() -> Int {
         let before = items.count
-        items.removeAll { $0.status != .pending }
+        items.removeAll { $0.status == .done || $0.status == .scratched }
+        let removed = before - items.count
+        if removed > 0 { scheduleSave() }
+        return removed
+    }
+
+    /// Hard-delete all items currently in the trash.
+    func purgeTrashed() -> Int {
+        let before = items.count
+        items.removeAll { $0.status == .trashed }
         let removed = before - items.count
         if removed > 0 { scheduleSave() }
         return removed

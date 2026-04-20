@@ -17,16 +17,20 @@ COMMANDS:
         --priority <N>          Priority (int, higher = more important)
 
     list                        List items (default: pending only)
-        -a, --all               Include done + scratched
+        -a, --all               Include done + scratched (excludes trash)
         --done                  Only done items
         --scratched             Only scratched items
+        --trashed               Only items in the trash
         -p, --project <name>    Filter by project
 
     get <id>                    Show full details for an item
     done <id>                   Mark an item as done
     undone <id>                 Move a done/scratched item back to pending
     scratch <id>                Scratch (drop) an item
-    rm <id>                     Delete an item
+    rm <id>                     Move an item to the trash (recoverable)
+    restore <id>                Move a trashed item back to pending
+    purge <id>                  Permanently delete an item (no recovery)
+    empty-trash                 Permanently delete everything in the trash
     mv <id> up|down|top|bottom  Move item in the queue
     mv <id> --to <index>        Move item to a specific 0-based index
     update <id>                 Replace title / note / project / priority
@@ -129,6 +133,8 @@ func parseArgs() -> ParsedArgs {
             p.filter = "done"
         case "--scratched":
             p.filter = "scratched"
+        case "--trashed", "--trash":
+            p.filter = "trashed"
         case "--to":
             i += 1
             if i < args.count, let v = Int(args[i]) { p.toIndex = v }
@@ -194,6 +200,7 @@ func printItemRow(index: Int?, item: TrackieItem) {
     case .pending:    mark = "○"
     case .done:       mark = "✓"
     case .scratched:  mark = "✕"
+    case .trashed:    mark = "🗑"
     }
     let idx = index.map { String(format: "%2d ", $0) } ?? ""
     var suffix = ""
@@ -210,6 +217,7 @@ func printItemRow(index: Int?, item: TrackieItem) {
     case .pending:   title = item.title
     case .done:      title = "\u{001B}[9m\(item.title)\u{001B}[0m"
     case .scratched: title = "\u{001B}[2m\(item.title)\u{001B}[0m"
+    case .trashed:   title = "\u{001B}[2m\u{001B}[9m\(item.title)\u{001B}[0m"
     }
     print("\(idx)\(mark) \u{001B}[90m\(id)\u{001B}[0m  \(title)\(suffix)")
 }
@@ -325,7 +333,27 @@ func run() async {
         let response = await trySend(TrackieRequest(type: "remove", id: id, idPrefix: id))
         if !response.ok { die(response.error ?? "rm failed") }
         if args.json { printJSON(response) }
-        else if !args.quiet { print("removed \(id)") }
+        else if !args.quiet, let item = response.item { print("trashed: \(item.title) (recover with `trackie restore \(item.shortId)`)") }
+
+    case "restore", "untrash":
+        guard let id = args.positionals.first else { die("restore requires an id") }
+        let response = await trySend(TrackieRequest(type: "restore", id: id, idPrefix: id))
+        if !response.ok { die(response.error ?? "restore failed") }
+        if args.json { printJSON(response) }
+        else if !args.quiet, let item = response.item { print("restored: \(item.title)") }
+
+    case "purge":
+        guard let id = args.positionals.first else { die("purge requires an id (use `trackie empty-trash` to drop everything in the trash)") }
+        let response = await trySend(TrackieRequest(type: "purge", id: id, idPrefix: id))
+        if !response.ok { die(response.error ?? "purge failed") }
+        if args.json { printJSON(response) }
+        else if !args.quiet { print("purged \(id)") }
+
+    case "empty-trash", "emptyTrash":
+        let response = await trySend(TrackieRequest(type: "empty-trash"))
+        if !response.ok { die(response.error ?? "empty-trash failed") }
+        if args.json { printJSON(response) }
+        else if !args.quiet { print("emptied trash (\(response.count ?? 0) items)") }
 
     case "mv", "move":
         guard let id = args.positionals.first else { die("mv requires an id") }

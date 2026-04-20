@@ -5,6 +5,7 @@ public enum TrackieStatus: String, Codable, Sendable {
     case pending
     case done
     case scratched
+    case trashed
 }
 
 /// A single item in the Trackie queue.

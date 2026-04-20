@@ -15,7 +15,11 @@ struct MenuBarContentView: View {
         case pending = "Pending"
         case done = "Done"
         case all = "All"
+        case trashed = "Trash"
         var id: String { rawValue }
+        /// Cases shown as text segments in the header picker. Trash gets its
+        /// own icon button instead of crowding the segmented control.
+        static var segmentCases: [Filter] { [.recent, .pending, .done, .all] }
     }
 
     /// How many items to show in the "Recent" view — a compact glance at
@@ -37,7 +41,10 @@ struct MenuBarContentView: View {
         case .done:
             return store.items.filter { $0.status == .done }
         case .all:
-            return store.items
+            return store.items.filter { $0.status != .trashed }
+        case .trashed:
+            return store.items.filter { $0.status == .trashed }
+                .sorted { $0.updatedAt > $1.updatedAt }
         }
     }
 
@@ -65,7 +72,7 @@ struct MenuBarContentView: View {
                 .font(.system(size: 13, weight: .semibold))
             Spacer()
             Picker("", selection: $filter) {
-                ForEach(Filter.allCases) { f in
+                ForEach(Filter.segmentCases) { f in
                     Text(f.rawValue).tag(f)
                 }
             }
@@ -73,6 +80,21 @@ struct MenuBarContentView: View {
             .labelsHidden()
             .frame(width: 220)
             .controlSize(.small)
+
+            Button {
+                filter = (filter == .trashed) ? .recent : .trashed
+            } label: {
+                Image(systemName: filter == .trashed ? "trash.fill" : "trash")
+                    .font(.system(size: 12))
+                    .foregroundStyle(filter == .trashed ? .primary : .secondary)
+                    .frame(width: 22, height: 20)
+                    .background(
+                        RoundedRectangle(cornerRadius: 4, style: .continuous)
+                            .fill(filter == .trashed ? Color.primary.opacity(0.12) : Color.clear)
+                    )
+            }
+            .buttonStyle(.plain)
+            .help(filter == .trashed ? "Back to Recent" : "Show Trash")
         }
         .padding(.horizontal, 12)
         .padding(.top, 10)
@@ -116,6 +138,7 @@ struct MenuBarContentView: View {
         case .recent, .pending: return "No open items"
         case .done: return "Nothing marked done yet"
         case .all: return "Nothing here"
+        case .trashed: return "Trash is empty"
         }
     }
 
@@ -141,13 +164,17 @@ struct MenuBarContentView: View {
                 // view once at content-size, and `maxHeight` alone is not
                 // enough to force a resize between states.
                 ScrollView {
-                    LazyVStack(alignment: .leading, spacing: Theme.rowSpacing) {
+                    // Plain VStack instead of LazyVStack — the menubar list is
+                    // small (≤ few dozen items), and Lazy adds cell-recycling
+                    // lag on removal that makes the trash click feel sluggish.
+                    VStack(alignment: .leading, spacing: Theme.rowSpacing) {
                         ForEach(filteredItems) { item in
                             MenuItemRow(item: item, store: store)
                         }
                     }
                     .padding(.horizontal, 8)
                     .padding(.vertical, 6)
+                    .animation(nil, value: filteredItems.map(\.id))
                 }
                 .frame(height: expanded ? 560 : 320)
             }
@@ -296,9 +323,16 @@ private struct MenuItemRow: View {
 
             if hovering {
                 HStack(spacing: 2) {
-                    iconButton("arrow.up") { _ = store.move(id: item.id, direction: "up") }
-                    iconButton("arrow.down") { _ = store.move(id: item.id, direction: "down") }
-                    iconButton("xmark") { _ = store.remove(id: item.id) }
+                    if item.status == .trashed {
+                        iconButton("arrow.uturn.left") { _ = store.setStatus(id: item.id, .pending) }
+                        HoldToConfirmButton(symbol: "trash.slash", duration: 2.0) {
+                            _ = store.remove(id: item.id)
+                        }
+                    } else {
+                        iconButton("arrow.up") { _ = store.move(id: item.id, direction: "up") }
+                        iconButton("arrow.down") { _ = store.move(id: item.id, direction: "down") }
+                        iconButton("trash") { _ = store.setStatus(id: item.id, .trashed) }
+                    }
                 }
                 .transition(.opacity)
             }
@@ -324,6 +358,7 @@ private struct MenuItemRow: View {
         case .pending: return "circle"
         case .done: return "checkmark.circle.fill"
         case .scratched: return "xmark.circle.fill"
+        case .trashed: return "trash.circle.fill"
         }
     }
 
@@ -332,6 +367,7 @@ private struct MenuItemRow: View {
         case .pending: return .secondary
         case .done: return .green
         case .scratched: return .orange
+        case .trashed: return .red.opacity(0.7)
         }
     }
 
@@ -359,5 +395,55 @@ private struct MenuItemRow: View {
                 )
         }
         .buttonStyle(.plain)
+    }
+}
+
+/// Press-and-hold button that fires `action` only after the user has held
+/// it for `duration` seconds. A circular ring fills while pressed; releasing
+/// early cancels the pending action. Used for the permanent-delete button
+/// so a stray click can't wipe a trashed item.
+private struct HoldToConfirmButton: View {
+    let symbol: String
+    let duration: Double
+    let action: () -> Void
+
+    @State private var pressing = false
+    @State private var progress: CGFloat = 0
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 4)
+                .fill(pressing ? Color.red.opacity(0.15) : Color.primary.opacity(0.08))
+
+            Circle()
+                .trim(from: 0, to: progress)
+                .stroke(Color.red, style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+                .padding(2)
+
+            Image(systemName: symbol)
+                .font(.system(size: 10))
+                .foregroundStyle(pressing ? Color.red : .secondary)
+        }
+        .frame(width: 18, height: 18)
+        .contentShape(Rectangle())
+        .help("Hold to delete forever")
+        .onLongPressGesture(
+            minimumDuration: duration,
+            maximumDistance: 100,
+            perform: {
+                action()
+                progress = 0
+                pressing = false
+            },
+            onPressingChanged: { isDown in
+                pressing = isDown
+                if isDown {
+                    withAnimation(.linear(duration: duration)) { progress = 1 }
+                } else {
+                    withAnimation(.easeOut(duration: 0.15)) { progress = 0 }
+                }
+            }
+        )
     }
 }

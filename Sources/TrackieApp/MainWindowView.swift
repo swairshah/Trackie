@@ -52,7 +52,7 @@ struct MainWindowView: View {
                     .onDelete { offsets in
                         for idx in offsets {
                             let item = pendingItems[idx]
-                            _ = store.remove(id: item.id)
+                            _ = store.setStatus(id: item.id, .trashed)
                         }
                     }
                 } header: {
@@ -82,6 +82,19 @@ struct MainWindowView: View {
                         }
                     } header: {
                         sectionHeader("SCRATCHED", count: scratchedItems.count)
+                    }
+                }
+
+                if !trashedItems.isEmpty {
+                    Section {
+                        ForEach(trashedItems) { item in
+                            row(item: item)
+                                .tag(item.id)
+                                .listRowSeparator(.hidden)
+                                .listRowInsets(EdgeInsets(top: 1, leading: 6, bottom: 1, trailing: 6))
+                        }
+                    } header: {
+                        trashHeader
                     }
                 }
             }
@@ -122,13 +135,41 @@ struct MainWindowView: View {
     private var scratchedItems: [TrackieItem] {
         store.items.filter { $0.status == .scratched }
     }
+    private var trashedItems: [TrackieItem] {
+        store.items.filter { $0.status == .trashed }
+    }
+
+    private var trashHeader: some View {
+        HStack {
+            Text("TRASH")
+                .font(.system(size: 10, weight: .semibold))
+                .tracking(0.8)
+                .foregroundStyle(.tertiary)
+            Spacer()
+            Button("Empty") {
+                _ = store.purgeTrashed()
+                if let sel = controller.selection, trashedItems.contains(where: { $0.id == sel }) {
+                    controller.selection = nil
+                }
+            }
+            .buttonStyle(.plain)
+            .font(.system(size: 10, weight: .medium))
+            .foregroundStyle(.secondary)
+            Text("\(trashedItems.count)")
+                .font(.system(size: 10))
+                .foregroundStyle(.tertiary)
+        }
+        .padding(.top, 6)
+        .padding(.bottom, 2)
+        .textCase(nil)
+    }
 
     private func row(item: TrackieItem) -> some View {
         HStack(spacing: 8) {
-            // Leading status/type icon. Tapping it cycles pending ⇄ done,
-            // matching the old circle-checkmark behaviour without the heavy
-            // radio-button look.
+            // Leading status/type icon. Tapping it cycles pending ⇄ done
+            // (disabled for trashed items — restore via context menu instead).
             Button {
+                if item.status == .trashed { return }
                 _ = store.setStatus(id: item.id, item.status == .done ? .pending : .done)
             } label: {
                 Image(systemName: rowIcon(for: item))
@@ -137,6 +178,7 @@ struct MainWindowView: View {
                     .frame(width: 16)
             }
             .buttonStyle(.plain)
+            .disabled(item.status == .trashed)
 
             Text(item.title)
                 .font(.system(size: 13))
@@ -162,17 +204,23 @@ struct MainWindowView: View {
         .padding(.vertical, 4)
         .padding(.horizontal, 8)
         .contextMenu {
-            Button("Mark Done") { _ = store.setStatus(id: item.id, .done) }
-                .disabled(item.status == .done)
-            Button("Reopen") { _ = store.setStatus(id: item.id, .pending) }
-                .disabled(item.status == .pending)
-            Button("Scratch") { _ = store.setStatus(id: item.id, .scratched) }
-                .disabled(item.status == .scratched)
-            Divider()
-            Button("Move to Top") { _ = store.move(id: item.id, direction: "top") }
-            Button("Move to Bottom") { _ = store.move(id: item.id, direction: "bottom") }
-            Divider()
-            Button("Delete", role: .destructive) { _ = store.remove(id: item.id) }
+            if item.status == .trashed {
+                Button("Restore") { _ = store.setStatus(id: item.id, .pending) }
+                Divider()
+                Button("Delete Forever", role: .destructive) { _ = store.remove(id: item.id) }
+            } else {
+                Button("Mark Done") { _ = store.setStatus(id: item.id, .done) }
+                    .disabled(item.status == .done)
+                Button("Reopen") { _ = store.setStatus(id: item.id, .pending) }
+                    .disabled(item.status == .pending)
+                Button("Scratch") { _ = store.setStatus(id: item.id, .scratched) }
+                    .disabled(item.status == .scratched)
+                Divider()
+                Button("Move to Top") { _ = store.move(id: item.id, direction: "top") }
+                Button("Move to Bottom") { _ = store.move(id: item.id, direction: "bottom") }
+                Divider()
+                Button("Move to Trash", role: .destructive) { _ = store.setStatus(id: item.id, .trashed) }
+            }
         }
     }
 
@@ -181,6 +229,7 @@ struct MainWindowView: View {
         case .pending:   return "circle"
         case .done:      return "checkmark"
         case .scratched: return "xmark"
+        case .trashed:   return "trash"
         }
     }
 
@@ -189,6 +238,7 @@ struct MainWindowView: View {
         case .pending:   return .secondary
         case .done:      return .green
         case .scratched: return .orange
+        case .trashed:   return .red.opacity(0.7)
         }
     }
 
@@ -319,27 +369,41 @@ private struct DetailEditor: View {
             }
 
             HStack(spacing: 8) {
-                Button {
-                    _ = store.setStatus(id: item.id, item.status == .done ? .pending : .done)
-                } label: {
-                    Label(item.status == .done ? "Reopen" : "Mark Done",
-                          systemImage: item.status == .done ? "arrow.uturn.left" : "checkmark")
-                }
+                if item.status == .trashed {
+                    Button {
+                        _ = store.setStatus(id: item.id, .pending)
+                    } label: {
+                        Label("Restore", systemImage: "arrow.uturn.left")
+                    }
+                    Spacer()
+                    Button(role: .destructive) {
+                        _ = store.remove(id: item.id)
+                    } label: {
+                        Label("Delete Forever", systemImage: "trash.slash")
+                    }
+                } else {
+                    Button {
+                        _ = store.setStatus(id: item.id, item.status == .done ? .pending : .done)
+                    } label: {
+                        Label(item.status == .done ? "Reopen" : "Mark Done",
+                              systemImage: item.status == .done ? "arrow.uturn.left" : "checkmark")
+                    }
 
-                Button {
-                    _ = store.setStatus(id: item.id, .scratched)
-                } label: {
-                    Label("Scratch", systemImage: "xmark")
-                }
-                .disabled(item.status == .scratched)
+                    Button {
+                        _ = store.setStatus(id: item.id, .scratched)
+                    } label: {
+                        Label("Scratch", systemImage: "xmark")
+                    }
+                    .disabled(item.status == .scratched)
 
-                Spacer()
+                    Spacer()
 
-                Button(role: .destructive) {
-                    commitAll()
-                    _ = store.remove(id: item.id)
-                } label: {
-                    Label("Delete", systemImage: "trash")
+                    Button(role: .destructive) {
+                        commitAll()
+                        _ = store.setStatus(id: item.id, .trashed)
+                    } label: {
+                        Label("Move to Trash", systemImage: "trash")
+                    }
                 }
             }
 
@@ -388,6 +452,7 @@ private struct DetailEditor: View {
             case .pending: return ("PENDING", .secondary)
             case .done: return ("DONE", .green)
             case .scratched: return ("SCRATCHED", .orange)
+            case .trashed: return ("TRASH", .red)
             }
         }()
         return Text(text)

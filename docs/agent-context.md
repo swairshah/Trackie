@@ -37,6 +37,8 @@ trackie note 3f8a "found it — race in the token refresh"
 # Finish.
 trackie done 3f8a            # id prefix (first 8 chars) is enough
 trackie scratch 3f8a         # drop without marking complete
+trackie rm 3f8a              # move to trash — user can restore it later
+                             # (use `trackie purge <id>` to hard-delete)
 ```
 
 Always tag `--project <name>` when you're inside a project directory, and
