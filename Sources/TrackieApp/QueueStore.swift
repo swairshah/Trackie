@@ -105,6 +105,7 @@ final class QueueStore: ObservableObject {
     func remove(id: UUID) -> Bool {
         guard let idx = items.firstIndex(where: { $0.id == id }) else { return false }
         items.remove(at: idx)
+        AttachmentManager.removeAll(for: id)
         scheduleSave()
         return true
     }
@@ -188,11 +189,11 @@ final class QueueStore: ObservableObject {
 
     /// Hard-delete all items currently in the trash.
     func purgeTrashed() -> Int {
-        let before = items.count
+        let trashedIds = items.filter { $0.status == .trashed }.map(\.id)
         items.removeAll { $0.status == .trashed }
-        let removed = before - items.count
-        if removed > 0 { scheduleSave() }
-        return removed
+        for id in trashedIds { AttachmentManager.removeAll(for: id) }
+        if !trashedIds.isEmpty { scheduleSave() }
+        return trashedIds.count
     }
 
     func clearAll() -> Int {

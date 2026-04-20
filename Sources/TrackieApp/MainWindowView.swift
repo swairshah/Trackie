@@ -354,19 +354,7 @@ private struct DetailEditor: View {
                     .onSubmit { commitProject() }
             }
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Notes")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
-                TextEditor(text: $note)
-                    .font(.system(size: 13))
-                    .scrollContentBackground(.hidden)
-                    .frame(minHeight: 140)
-                    .padding(6)
-                    .background(
-                        RoundedRectangle(cornerRadius: 6).fill(Theme.subtleBackground)
-                    )
-            }
+            NoteEditor(itemId: item.id, text: $note, onCommit: commitNote)
 
             HStack(spacing: 8) {
                 if item.status == .trashed {
@@ -437,13 +425,17 @@ private struct DetailEditor: View {
         _ = store.update(id: item.id, project: .some(newValue))
     }
 
+    private func commitNote() {
+        guard loaded else { return }
+        let newNote: String? = note.isEmpty ? nil : note
+        guard newNote != item.note else { return }
+        _ = store.update(id: item.id, note: .some(newNote))
+    }
+
     private func commitAll() {
         commitTitle()
         commitProject()
-        let newNote: String? = note.isEmpty ? nil : note
-        if newNote != item.note {
-            _ = store.update(id: item.id, note: .some(newNote))
-        }
+        commitNote()
     }
 
     private var statusBadge: some View {

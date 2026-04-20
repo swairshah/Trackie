@@ -14,7 +14,9 @@ let package = Package(
         // installs this as `trackie` on the user's PATH.
         .executable(name: "trackiectl", targets: ["TrackieCLI"]),
     ],
-    dependencies: [],
+    dependencies: [
+        .package(url: "https://github.com/gonzalezreal/swift-markdown-ui", from: "2.4.0"),
+    ],
     targets: [
         .target(
             name: "TrackieClient",
@@ -22,7 +24,10 @@ let package = Package(
         ),
         .executableTarget(
             name: "Trackie",
-            dependencies: ["TrackieClient"],
+            dependencies: [
+                "TrackieClient",
+                .product(name: "MarkdownUI", package: "swift-markdown-ui"),
+            ],
             path: "Sources/TrackieApp",
             exclude: ["Info.plist", "Trackie.entitlements"],
             resources: [
