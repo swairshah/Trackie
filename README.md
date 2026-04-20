@@ -91,7 +91,8 @@ popular coding agent reads a conventional file:
 | Claude Code | `CLAUDE.md` (project) or `~/.claude/CLAUDE.md` (global) |
 | Codex / Aider / most OpenAI tooling | `AGENTS.md` |
 | Cursor | `.cursor/rules/*.mdc` |
-| pi.dev / other | usually either of the above |
+| pi.dev | `.pi/agent/AGENTS.md` (project) or `~/.pi/agent/AGENTS.md` (global) |
+| Others | usually one of the above |
 
 Run this once in any repo — or with `--global` once per machine — and
 Trackie will drop a short "how to use me" block into every convention file

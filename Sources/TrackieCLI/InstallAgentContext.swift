@@ -93,6 +93,13 @@ func installAgentContext(global: Bool, dryRun: Bool, quiet: Bool) {
             label: "Cursor (global rules)",
             createIfMissing: true
         ))
+        // pi.dev: ~/.pi/agent/AGENTS.md
+        let piDir = home.appendingPathComponent(".pi/agent", isDirectory: true)
+        targets.append(AgentTarget(
+            path: piDir.appendingPathComponent("AGENTS.md"),
+            label: "pi (global)",
+            createIfMissing: true
+        ))
     } else {
         targets.append(AgentTarget(
             path: cwd.appendingPathComponent("CLAUDE.md"),
@@ -107,6 +114,11 @@ func installAgentContext(global: Bool, dryRun: Bool, quiet: Bool) {
         targets.append(AgentTarget(
             path: cwd.appendingPathComponent(".cursor/rules/trackie.mdc"),
             label: "Cursor",
+            createIfMissing: false
+        ))
+        targets.append(AgentTarget(
+            path: cwd.appendingPathComponent(".pi/agent/AGENTS.md"),
+            label: "pi",
             createIfMissing: false
         ))
     }
