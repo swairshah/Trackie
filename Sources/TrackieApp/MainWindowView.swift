@@ -17,11 +17,19 @@ struct MainWindowView: View {
     }
 
     var body: some View {
-        HStack(spacing: 0) {
-            sidebar
-            Divider()
-            detail
-        }
+        // Custom resizable split instead of HSplitView: HSplitView's internal
+        // state is not preserved across SwiftUI body invalidations, so
+        // selection changes would reset the width. Keeping the width in
+        // @AppStorage also lets it persist across launches.
+        ResizableSplit(
+            storageKey: "sidebarWidth",
+            defaultWidth: 340,
+            minSidebar: 240,
+            maxSidebar: 520,
+            minDetail: 360,
+            sidebar: { sidebar },
+            detail: { detail }
+        )
         .frame(minWidth: 760, minHeight: 460)
         .background(WindowAccessor().ignoresSafeArea())
     }
@@ -86,7 +94,6 @@ struct MainWindowView: View {
 
             addRow
         }
-        .frame(minWidth: 300, idealWidth: 340)
     }
 
     /// Clearly-style small-caps section header with a subtle trailing count.
@@ -241,7 +248,6 @@ struct MainWindowView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .frame(minWidth: 380)
     }
 }
 
@@ -388,7 +394,11 @@ private struct WindowAccessor: NSViewRepresentable {
             if let window = v.window {
                 window.titlebarAppearsTransparent = true
                 window.titleVisibility = .hidden
-                window.isMovableByWindowBackground = true
+                // Intentionally NOT setting isMovableByWindowBackground — with
+                // it on, any non-titlebar drag (including dragging our split
+                // divider) was moving the whole window. The titlebar is
+                // still draggable for repositioning the window.
+                window.isMovableByWindowBackground = false
             }
         }
         return v
