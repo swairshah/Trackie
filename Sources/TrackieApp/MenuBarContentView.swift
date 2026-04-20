@@ -5,18 +5,29 @@ import TrackieClient
 struct MenuBarContentView: View {
     @ObservedObject var store: QueueStore
     @State private var newTitle: String = ""
-    @State private var filter: Filter = .pending
+    @State private var filter: Filter = .recent
     @FocusState private var inputFocused: Bool
 
     enum Filter: String, CaseIterable, Identifiable {
+        case recent = "Recent"
         case pending = "Pending"
         case done = "Done"
         case all = "All"
         var id: String { rawValue }
     }
 
+    /// How many items to show in the "Recent" view — a compact glance at
+    /// the newest open items without scrolling through the whole queue.
+    private static let recentLimit = 5
+
     private var filteredItems: [TrackieItem] {
         switch filter {
+        case .recent:
+            return store.items
+                .filter { $0.status == .pending }
+                .sorted { $0.createdAt > $1.createdAt }
+                .prefix(Self.recentLimit)
+                .map { $0 }
         case .pending:
             return store.items.filter { $0.status == .pending }
         case .done:
@@ -57,7 +68,7 @@ struct MenuBarContentView: View {
             }
             .pickerStyle(.segmented)
             .labelsHidden()
-            .frame(width: 170)
+            .frame(width: 220)
             .controlSize(.small)
         }
         .padding(.horizontal, 12)
@@ -97,6 +108,14 @@ struct MenuBarContentView: View {
         newTitle = ""
     }
 
+    private var emptyMessage: String {
+        switch filter {
+        case .recent, .pending: return "No open items"
+        case .done: return "Nothing marked done yet"
+        case .all: return "Nothing here"
+        }
+    }
+
     // MARK: - List
 
     private var list: some View {
@@ -106,7 +125,7 @@ struct MenuBarContentView: View {
                     Image(systemName: "tray")
                         .font(.system(size: 20))
                         .foregroundStyle(.tertiary)
-                    Text(filter == .pending ? "No pending items" : "Nothing here")
+                    Text(emptyMessage)
                         .font(.system(size: 12))
                         .foregroundStyle(.secondary)
                 }
