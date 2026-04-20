@@ -199,7 +199,13 @@ struct MainWindowView: View {
     }
 
     private var addRow: some View {
+        // Wrap the TextFields in a visible pill-styled container — plain
+        // text fields without a background are easy to miss and hard to
+        // hit reliably inside a List-dominated sidebar.
         HStack(spacing: 6) {
+            Image(systemName: "plus")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(.secondary)
             TextField("Add to queue", text: $newTitle)
                 .textFieldStyle(.plain)
                 .font(.system(size: 13))
@@ -208,13 +214,21 @@ struct MainWindowView: View {
                 .textFieldStyle(.plain)
                 .font(.system(size: 11))
                 .foregroundStyle(.secondary)
-                .frame(width: 80)
-            Button("Add") { submitNew() }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.small)
-                .disabled(newTitle.trimmingCharacters(in: .whitespaces).isEmpty)
+                .frame(width: 70)
+                .onSubmit { submitNew() }
+            if !newTitle.trimmingCharacters(in: .whitespaces).isEmpty {
+                Button("Add") { submitNew() }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+            }
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+        .background(
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                .fill(Color.primary.opacity(0.05))
+        )
+        .padding(.horizontal, 10)
         .padding(.vertical, 10)
     }
 
