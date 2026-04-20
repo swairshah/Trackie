@@ -3,6 +3,13 @@ import AppKit
 import MarkdownUI
 import UniformTypeIdentifiers
 
+/// Broadcast when the user asks to jump into the note editor from a
+/// keyboard shortcut. The MainWindow posts it with the item id as the
+/// object; NoteEditor observes and flips its mode + focus.
+extension Notification.Name {
+    static let trackieFocusNoteEditor = Notification.Name("TrackieFocusNoteEditor")
+}
+
 /// Note editor with two modes: rendered Preview (MarkdownUI with
 /// media-aware image providers) and raw markdown Edit (NSTextView with
 /// paste + drop interception for attachments). Attachments are routed
@@ -27,6 +34,12 @@ struct NoteEditor: View {
         VStack(alignment: .leading, spacing: 6) {
             toolbar
             contentPane
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .trackieFocusNoteEditor)) { notification in
+            if let target = notification.object as? UUID, target == itemId {
+                mode = .edit
+                focusEditor = true
+            }
         }
     }
 

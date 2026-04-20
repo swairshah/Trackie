@@ -109,7 +109,20 @@ final class AttachmentAwareTextView: NSTextView {
         // standard hook, but overriding keyDown directly is more
         // reliable across focused/unfocused states.
         if event.keyCode == 53 {
+            let window = self.window
             onEscape?()
+            // The SwiftUI re-render for preview-mode happens on the next
+            // runloop tick; only after that can we hand focus back to
+            // the sidebar's NSTableView so arrow keys start navigating
+            // rows again instead of vanishing into this (now hidden)
+            // text view.
+            DispatchQueue.main.async {
+                if let table = window?.contentView.flatMap(findFirstTableView) {
+                    window?.makeFirstResponder(table)
+                } else {
+                    window?.makeFirstResponder(nil)
+                }
+            }
             return
         }
         super.keyDown(with: event)
@@ -162,6 +175,20 @@ final class AttachmentAwareTextView: NSTextView {
         (NSPasteboard.PasteboardType("public.movie"), "mov", .movie),
         (NSPasteboard.PasteboardType("public.audio"), "m4a", .audio),
     ]
+}
+
+/// Walk the view subtree breadth-first looking for the first
+/// NSTableView. SwiftUI's List on macOS is backed by NSTableView, and
+/// handing that view first-responder is what makes up/down arrows
+/// start navigating selection again after Escape.
+private func findFirstTableView(in root: NSView) -> NSTableView? {
+    var queue: [NSView] = [root]
+    while !queue.isEmpty {
+        let v = queue.removeFirst()
+        if let t = v as? NSTableView { return t }
+        queue.append(contentsOf: v.subviews)
+    }
+    return nil
 }
 
 /// Accepts dropped items in either the Preview or Edit pane. Anything

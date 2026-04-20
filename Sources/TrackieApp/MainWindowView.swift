@@ -32,6 +32,69 @@ struct MainWindowView: View {
         )
         .frame(minWidth: 760, minHeight: 460)
         .background(WindowAccessor().ignoresSafeArea())
+        .background(keyboardShortcuts)
+    }
+
+    // MARK: - Keyboard shortcuts
+    //
+    // These Buttons are rendered zero-size and hidden — they exist only
+    // to carry `.keyboardShortcut` bindings at the window scope. Each
+    // fires against whatever row is currently selected in the sidebar.
+    private var keyboardShortcuts: some View {
+        Group {
+            // Delete: pending → scratch, scratched → pending. No-op on done/trashed.
+            Button("") { deleteAction() }
+                .keyboardShortcut(.delete, modifiers: [])
+            // Shift+Enter: pending → done, done → pending. No-op on scratched/trashed.
+            Button("") { toggleDoneAction() }
+                .keyboardShortcut(.return, modifiers: .shift)
+            // Enter: jump into note editor (any status).
+            Button("") { enterEditAction() }
+                .keyboardShortcut(.return, modifiers: [])
+            // Cmd+Delete: pending/done/scratched → trash, trashed → pending.
+            Button("") { trashAction() }
+                .keyboardShortcut(.delete, modifiers: .command)
+        }
+        .buttonStyle(.plain)
+        .frame(width: 0, height: 0)
+        .opacity(0)
+        .allowsHitTesting(false)
+    }
+
+    private var selectedItem: TrackieItem? {
+        guard let id = controller.selection else { return nil }
+        return store.item(id: id)
+    }
+
+    private func deleteAction() {
+        guard let item = selectedItem else { return }
+        switch item.status {
+        case .pending:   _ = store.setStatus(id: item.id, .scratched)
+        case .scratched: _ = store.setStatus(id: item.id, .pending)
+        case .done, .trashed: break
+        }
+    }
+
+    private func toggleDoneAction() {
+        guard let item = selectedItem else { return }
+        switch item.status {
+        case .pending: _ = store.setStatus(id: item.id, .done)
+        case .done:    _ = store.setStatus(id: item.id, .pending)
+        case .scratched, .trashed: break
+        }
+    }
+
+    private func enterEditAction() {
+        guard let item = selectedItem else { return }
+        NotificationCenter.default.post(name: .trackieFocusNoteEditor, object: item.id)
+    }
+
+    private func trashAction() {
+        guard let item = selectedItem else { return }
+        switch item.status {
+        case .pending, .done, .scratched: _ = store.setStatus(id: item.id, .trashed)
+        case .trashed:                    _ = store.setStatus(id: item.id, .pending)
+        }
     }
 
     // MARK: - Sidebar (the queue)
