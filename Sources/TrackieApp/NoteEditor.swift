@@ -19,6 +19,7 @@ struct NoteEditor: View {
     var onCommit: () -> Void
 
     @State private var mode: Mode = .preview
+    @State private var focusEditor = false
 
     enum Mode { case preview, edit }
 
@@ -84,6 +85,15 @@ struct NoteEditor: View {
         .background(
             RoundedRectangle(cornerRadius: 6).fill(Theme.subtleBackground)
         )
+        .contentShape(Rectangle())
+        // Double-click anywhere in the preview → drop into edit mode
+        // with the caret at the end. We can't reliably map a render
+        // position back to a markdown source offset, so "caret at end"
+        // is the conservative default.
+        .onTapGesture(count: 2) {
+            mode = .edit
+            focusEditor = true
+        }
         .onDrop(of: [.image, .movie, .audio, .fileURL], delegate: AttachmentDropDelegate(
             itemId: itemId,
             insert: { insert(snippet: $0) }
@@ -94,7 +104,12 @@ struct NoteEditor: View {
         MarkdownTextEditor(
             text: $text,
             onPaste: { handlePasted($0) },
-            onCommit: onCommit
+            onCommit: onCommit,
+            onEscape: {
+                onCommit()
+                mode = .preview
+            },
+            focusRequest: $focusEditor
         )
         .frame(minHeight: 160)
         .background(

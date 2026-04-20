@@ -17,6 +17,13 @@ struct MarkdownTextEditor: NSViewRepresentable {
     @Binding var text: String
     var onPaste: (PastePayload) -> Void
     var onCommit: () -> Void
+    /// Fires when the user presses Escape inside the editor. Used by
+    /// `NoteEditor` to flip back to preview mode.
+    var onEscape: () -> Void = {}
+    /// When true, the underlying NSTextView becomes first responder
+    /// and moves the caret to the end of the document. Set once then
+    /// reset by the caller.
+    @Binding var focusRequest: Bool
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
@@ -39,6 +46,7 @@ struct MarkdownTextEditor: NSViewRepresentable {
         let tv = AttachmentAwareTextView(frame: .zero, textContainer: container)
         tv.delegate = context.coordinator
         tv.onPaste = onPaste
+        tv.onEscape = onEscape
         tv.isEditable = true
         tv.isRichText = false
         tv.isAutomaticQuoteSubstitutionEnabled = false
@@ -57,8 +65,21 @@ struct MarkdownTextEditor: NSViewRepresentable {
     }
 
     func updateNSView(_ nsView: NSScrollView, context: Context) {
-        guard let tv = nsView.documentView as? NSTextView, tv.string != text else { return }
-        tv.string = text
+        guard let tv = nsView.documentView as? NSTextView else { return }
+        if tv.string != text { tv.string = text }
+        if focusRequest {
+            // Defer to the next runloop tick so the view has finished
+            // being added to the window before we ask it to become
+            // first responder.
+            DispatchQueue.main.async {
+                guard let window = tv.window else { return }
+                window.makeFirstResponder(tv)
+                let end = (tv.string as NSString).length
+                tv.setSelectedRange(NSRange(location: end, length: 0))
+                tv.scrollRangeToVisible(NSRange(location: end, length: 0))
+                focusRequest = false
+            }
+        }
     }
 
     final class Coordinator: NSObject, NSTextViewDelegate {
@@ -81,6 +102,18 @@ struct MarkdownTextEditor: NSViewRepresentable {
 /// layer via `onPaste`. Plain text falls through to normal paste.
 final class AttachmentAwareTextView: NSTextView {
     var onPaste: ((PastePayload) -> Void)?
+    var onEscape: (() -> Void)?
+
+    override func keyDown(with event: NSEvent) {
+        // keyCode 53 is Escape — `cancelOperation(_:)` is also the
+        // standard hook, but overriding keyDown directly is more
+        // reliable across focused/unfocused states.
+        if event.keyCode == 53 {
+            onEscape?()
+            return
+        }
+        super.keyDown(with: event)
+    }
 
     override func paste(_ sender: Any?) {
         if handle(NSPasteboard.general) { return }
