@@ -31,6 +31,9 @@ trackie add "Investigate flaky login test" --project auth --note "see auth_test.
 trackie list                 # open items
 trackie list --json          # machine-readable for tool parsing
 
+# Append progress notes as you go (appends, doesn't replace).
+trackie note 3f8a "found it — race in the token refresh"
+
 # Finish.
 trackie done 3f8a            # id prefix (first 8 chars) is enough
 trackie scratch 3f8a         # drop without marking complete

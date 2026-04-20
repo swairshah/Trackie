@@ -38,6 +38,8 @@ from seeing later.
 trackie add "Investigate flaky login test" --project auth --note "see auth_test.py"
 trackie list                 # open items
 trackie list --json          # machine-readable
+trackie note 3f8a "found it — race in the token refresh"
+                             # append more context without clobbering prior notes
 trackie done 3f8a            # mark done by 8-char id prefix
 trackie scratch 3f8a         # drop without marking complete
 ```

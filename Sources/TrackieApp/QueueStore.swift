@@ -134,6 +134,20 @@ final class QueueStore: ObservableObject {
         return items[idx]
     }
 
+    func appendNote(id: UUID, text: String) -> TrackieItem? {
+        guard let idx = items.firstIndex(where: { $0.id == id }) else { return nil }
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return items[idx] }
+        if let existing = items[idx].note, !existing.isEmpty {
+            items[idx].note = existing + "\n\n" + trimmed
+        } else {
+            items[idx].note = trimmed
+        }
+        items[idx].updatedAt = Date()
+        scheduleSave()
+        return items[idx]
+    }
+
     func move(from source: Int, to destination: Int) {
         guard items.indices.contains(source) else { return }
         let clamped = max(0, min(destination, items.count - 1))

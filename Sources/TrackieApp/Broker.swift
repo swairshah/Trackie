@@ -231,6 +231,16 @@ final class Broker {
             )
             return .success(item: updated)
 
+        case "append-note", "appendNote":
+            guard let item = resolveItem(request: request) else {
+                return .failure("Item not found")
+            }
+            guard let text = request.note, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                return .failure("Missing note text")
+            }
+            let updated = store.appendNote(id: item.id, text: text)
+            return .success(item: updated)
+
         case "move":
             guard let item = resolveItem(request: request) else {
                 return .failure("Item not found")

@@ -29,7 +29,9 @@ COMMANDS:
     rm <id>                     Delete an item
     mv <id> up|down|top|bottom  Move item in the queue
     mv <id> --to <index>        Move item to a specific 0-based index
-    update <id>                 Edit title / note / project / priority
+    update <id>                 Replace title / note / project / priority
+    note <id> <text>            Append additional note text to an item
+                                (pipe stdin, or pass --note <text>, also works)
     clear                       Clear completed + scratched items
     clear --all                 Clear EVERYTHING (destructive)
 
@@ -58,6 +60,7 @@ EXAMPLES:
     trackie done 3f8a
     trackie mv 3f8a top
     trackie rm 3f8a
+    trackie note 3f8a "turned out to be a caching issue, see commit abc123"
 """
 
 // MARK: - Arg parsing
@@ -338,6 +341,28 @@ func run() async {
         if !response.ok { die(response.error ?? "mv failed") }
         if args.json { printJSON(response) }
         else if !args.quiet, let item = response.item { print("moved: \(item.title)") }
+
+    case "note", "append-note":
+        guard let id = args.positionals.first else { die("note requires an id") }
+        var text = args.positionals.dropFirst().joined(separator: " ")
+        if text.isEmpty, let piped = readStdin() { text = piped }
+        if text.isEmpty, let n = args.note { text = n }
+        if text.isEmpty {
+            die("note requires text: `trackie note <id> \"text\"`, or pipe via stdin, or pass --note")
+        }
+        let req = TrackieRequest(
+            type: "append-note",
+            note: text,
+            id: id,
+            idPrefix: id,
+            sourceApp: "trackie-cli",
+            sessionId: args.sessionId,
+            pid: getpid()
+        )
+        let response = await trySend(req)
+        if !response.ok { die(response.error ?? "note failed") }
+        if args.json { printJSON(response) }
+        else if !args.quiet, let item = response.item { print("noted: \(item.title)") }
 
     case "update", "edit":
         guard let id = args.positionals.first else { die("update requires an id") }

@@ -71,6 +71,8 @@ trackie list --json         # machine-readable, perfect for agents
 
 trackie done 3f8a           # mark done by id prefix
 trackie mv 3f8a top         # bump to the top of the queue
+trackie note 3f8a "follow-up: caching issue, see commit abc123"
+echo "more context" | trackie note 3f8a
 trackie rm 3f8a
 trackie clear               # drop everything that's done or scratched
 ```
