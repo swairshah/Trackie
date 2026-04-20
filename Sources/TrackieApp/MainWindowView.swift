@@ -30,24 +30,13 @@ struct MainWindowView: View {
 
     private var sidebar: some View {
         VStack(spacing: 0) {
-            HStack {
-                Text("Queue")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Text("\(pendingItems.count)")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.tertiary)
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 14)
-            .padding(.bottom, 8)
-
             List(selection: selectionBinding) {
                 Section {
                     ForEach(pendingItems) { item in
                         row(item: item)
                             .tag(item.id)
+                            .listRowSeparator(.hidden)
+                            .listRowInsets(EdgeInsets(top: 1, leading: 6, bottom: 1, trailing: 6))
                     }
                     .onMove { src, dest in
                         store.onMove(from: src, to: dest)
@@ -58,33 +47,63 @@ struct MainWindowView: View {
                             _ = store.remove(id: item.id)
                         }
                     }
+                } header: {
+                    sectionHeader("QUEUE", count: pendingItems.count)
                 }
 
                 if !doneItems.isEmpty {
-                    Section("Done") {
+                    Section {
                         ForEach(doneItems) { item in
                             row(item: item)
                                 .tag(item.id)
+                                .listRowSeparator(.hidden)
+                                .listRowInsets(EdgeInsets(top: 1, leading: 6, bottom: 1, trailing: 6))
                         }
+                    } header: {
+                        sectionHeader("DONE", count: doneItems.count)
                     }
                 }
 
-                if showScratched && !scratchedItems.isEmpty {
-                    Section("Scratched") {
+                if !scratchedItems.isEmpty {
+                    Section {
                         ForEach(scratchedItems) { item in
                             row(item: item)
                                 .tag(item.id)
+                                .listRowSeparator(.hidden)
+                                .listRowInsets(EdgeInsets(top: 1, leading: 6, bottom: 1, trailing: 6))
                         }
+                    } header: {
+                        sectionHeader("SCRATCHED", count: scratchedItems.count)
                     }
                 }
             }
             .listStyle(.sidebar)
+            .scrollContentBackground(.hidden)
+            .background(Color.clear)
+            .environment(\.defaultMinListRowHeight, 30)
 
-            Divider()
+            Divider().opacity(0.4)
 
             addRow
         }
         .frame(minWidth: 300, idealWidth: 340)
+    }
+
+    /// Clearly-style small-caps section header with a subtle trailing count.
+    private func sectionHeader(_ title: String, count: Int) -> some View {
+        HStack {
+            Text(title)
+                .font(.system(size: 10, weight: .semibold))
+                .tracking(0.8)
+                .foregroundStyle(.tertiary)
+            Spacer()
+            Text("\(count)")
+                .font(.system(size: 10))
+                .foregroundStyle(.tertiary)
+        }
+        .padding(.top, 6)
+        .padding(.bottom, 2)
+        .textCase(nil)
     }
 
     private var pendingItems: [TrackieItem] {
@@ -99,32 +118,42 @@ struct MainWindowView: View {
 
     private func row(item: TrackieItem) -> some View {
         HStack(spacing: 8) {
+            // Leading status/type icon. Tapping it cycles pending ⇄ done,
+            // matching the old circle-checkmark behaviour without the heavy
+            // radio-button look.
             Button {
                 _ = store.setStatus(id: item.id, item.status == .done ? .pending : .done)
             } label: {
-                Image(systemName: item.status == .done ? "checkmark.circle.fill"
-                                 : item.status == .scratched ? "xmark.circle.fill"
-                                 : "circle")
-                    .foregroundStyle(item.status == .done ? .green
-                                     : item.status == .scratched ? .orange
-                                     : .secondary)
+                Image(systemName: rowIcon(for: item))
+                    .font(.system(size: 13))
+                    .foregroundStyle(rowIconColor(for: item))
+                    .frame(width: 16)
             }
             .buttonStyle(.plain)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(item.title)
-                    .font(.system(size: 13))
-                    .strikethrough(item.status != .pending, color: .secondary)
-                    .foregroundStyle(item.status == .pending ? .primary : .secondary)
-                    .lineLimit(1)
+            Text(item.title)
+                .font(.system(size: 13))
+                .strikethrough(item.status != .pending, color: .secondary)
+                .foregroundStyle(item.status == .pending ? .primary : .secondary)
+                .lineLimit(1)
+                .truncationMode(.tail)
 
-                if let project = item.project, !project.isEmpty {
-                    Text(project)
-                        .font(.system(size: 10))
-                        .foregroundStyle(.tertiary)
-                }
+            Spacer(minLength: 6)
+
+            // Trailing secondary — either the project tag or the source
+            // app. Clearly's sidebar uses this slot for file-type hints
+            // like "Excalid…"; we use it for project/source.
+            if let trailing = rowTrailingText(item), !trailing.isEmpty {
+                Text(trailing)
+                    .font(.system(size: 11))
+                    .foregroundStyle(.tertiary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .frame(maxWidth: 90, alignment: .trailing)
             }
         }
+        .padding(.vertical, 4)
+        .padding(.horizontal, 8)
         .contextMenu {
             Button("Mark Done") { _ = store.setStatus(id: item.id, .done) }
                 .disabled(item.status == .done)
@@ -138,6 +167,28 @@ struct MainWindowView: View {
             Divider()
             Button("Delete", role: .destructive) { _ = store.remove(id: item.id) }
         }
+    }
+
+    private func rowIcon(for item: TrackieItem) -> String {
+        switch item.status {
+        case .pending:   return "circle"
+        case .done:      return "checkmark"
+        case .scratched: return "xmark"
+        }
+    }
+
+    private func rowIconColor(for item: TrackieItem) -> Color {
+        switch item.status {
+        case .pending:   return .secondary
+        case .done:      return .green
+        case .scratched: return .orange
+        }
+    }
+
+    private func rowTrailingText(_ item: TrackieItem) -> String? {
+        if let project = item.project, !project.isEmpty { return project }
+        if let src = item.sourceApp, !src.isEmpty, src != "Trackie.app" { return src }
+        return nil
     }
 
     private var addRow: some View {
