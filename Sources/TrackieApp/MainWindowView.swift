@@ -146,15 +146,13 @@ struct MainWindowView: View {
                 .tracking(0.8)
                 .foregroundStyle(.tertiary)
             Spacer()
-            Button("Empty") {
-                _ = store.purgeTrashed()
-                if let sel = controller.selection, trashedItems.contains(where: { $0.id == sel }) {
-                    controller.selection = nil
+            HoldToConfirmButton(text: "Empty") {
+                let trashedSelection = controller.selection.flatMap { sel in
+                    trashedItems.contains(where: { $0.id == sel }) ? sel : nil
                 }
+                _ = store.purgeTrashed()
+                if trashedSelection != nil { controller.selection = nil }
             }
-            .buttonStyle(.plain)
-            .font(.system(size: 10, weight: .medium))
-            .foregroundStyle(.secondary)
             Text("\(trashedItems.count)")
                 .font(.system(size: 10))
                 .foregroundStyle(.tertiary)
