@@ -6,6 +6,7 @@ enum Theme {
     static let rowSpacing: CGFloat = 4
     static let menubarWidth: CGFloat = 360
     static let menubarMaxHeight: CGFloat = 520
+    static let menubarMaxHeightExpanded: CGFloat = 760
 
     static let accent = Color.accentColor
 

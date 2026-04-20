@@ -6,6 +6,7 @@ struct MenuBarContentView: View {
     @ObservedObject var store: QueueStore
     @State private var newTitle: String = ""
     @State private var filter: Filter = .recent
+    @State private var expanded: Bool = false
     @FocusState private var inputFocused: Bool
 
     enum Filter: String, CaseIterable, Identifiable {
@@ -23,11 +24,13 @@ struct MenuBarContentView: View {
     private var filteredItems: [TrackieItem] {
         switch filter {
         case .recent:
-            return store.items
+            // When the list is expanded we drop the 5-item cap — the
+            // chevron's job is to *show more*, so it also lifts the Recent
+            // slice from a compact glance to the full stream of open items.
+            let pending = store.items
                 .filter { $0.status == .pending }
                 .sorted { $0.createdAt > $1.createdAt }
-                .prefix(Self.recentLimit)
-                .map { $0 }
+            return expanded ? pending : Array(pending.prefix(Self.recentLimit))
         case .pending:
             return store.items.filter { $0.status == .pending }
         case .done:
@@ -47,7 +50,6 @@ struct MenuBarContentView: View {
             footer
         }
         .frame(width: Theme.menubarWidth)
-        .frame(maxHeight: Theme.menubarMaxHeight, alignment: .top)
         .onAppear { inputFocused = true }
     }
 
@@ -132,6 +134,11 @@ struct MenuBarContentView: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 40)
             } else {
+                // Use an explicit `height:` (not `maxHeight`) so SwiftUI
+                // reliably re-lays out the MenuBarExtra popover when the
+                // toggle flips. MenuBarExtra's NSPanel measures its host
+                // view once at content-size, and `maxHeight` alone is not
+                // enough to force a resize between states.
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: Theme.rowSpacing) {
                         ForEach(filteredItems) { item in
@@ -141,7 +148,7 @@ struct MenuBarContentView: View {
                     .padding(.horizontal, 8)
                     .padding(.vertical, 6)
                 }
-                .frame(maxHeight: 340)
+                .frame(height: expanded ? 560 : 320)
             }
         }
     }
@@ -149,10 +156,28 @@ struct MenuBarContentView: View {
     // MARK: - Footer
 
     private var footer: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 10) {
             Text(countSummary)
                 .font(.system(size: 11))
                 .foregroundStyle(.secondary)
+
+            // Expand / collapse the list area. `>` when collapsed, `v` when
+            // expanded — familiar chevron affordance.
+            Button {
+                expanded.toggle()
+            } label: {
+                Image(systemName: expanded ? "chevron.up" : "chevron.down")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 18, height: 18)
+                    .background(
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(Color.primary.opacity(0.07))
+                    )
+            }
+            .buttonStyle(.plain)
+            .help(expanded ? "Show less" : "Show more")
+
             Spacer()
 
             Button {
