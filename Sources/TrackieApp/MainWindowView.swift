@@ -445,10 +445,46 @@ private struct DetailEditor: View {
     let item: TrackieItem
     @ObservedObject var store: QueueStore
 
-    @State private var title: String = ""
-    @State private var note: String = ""
-    @State private var project: String = ""
-    @State private var loaded = false
+    // No @State for title / note / project. Previously we hydrated them
+    // once from `item` and the copy went stale whenever the broker (or any
+    // other caller) mutated the store after the editor was on screen
+    // (issue #7). The bindings below read/write straight through the store
+    // so the editor is always showing the live value — every update from
+    // the CLI lands immediately, and every keystroke persists immediately.
+
+    private var titleBinding: Binding<String> {
+        Binding(
+            get: { item.title },
+            set: { newValue in
+                let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmed.isEmpty, trimmed != item.title else { return }
+                _ = store.update(id: item.id, title: trimmed)
+            }
+        )
+    }
+
+    private var projectBinding: Binding<String> {
+        Binding(
+            get: { item.project ?? "" },
+            set: { newValue in
+                let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+                let newProject: String? = trimmed.isEmpty ? nil : trimmed
+                guard newProject != item.project else { return }
+                _ = store.update(id: item.id, project: .some(newProject))
+            }
+        )
+    }
+
+    private var noteBinding: Binding<String> {
+        Binding(
+            get: { item.note ?? "" },
+            set: { newValue in
+                let newNote: String? = newValue.isEmpty ? nil : newValue
+                guard newNote != item.note else { return }
+                _ = store.update(id: item.id, note: .some(newNote))
+            }
+        )
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -463,22 +499,20 @@ private struct DetailEditor: View {
                     .foregroundStyle(.tertiary)
             }
 
-            TextField("Title", text: $title)
+            TextField("Title", text: titleBinding)
                 .font(.system(size: 20, weight: .semibold))
                 .textFieldStyle(.plain)
-                .onSubmit { commitTitle() }
 
             HStack(spacing: 6) {
                 Text("Project")
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
-                TextField("(none)", text: $project)
+                TextField("(none)", text: projectBinding)
                     .textFieldStyle(.plain)
                     .font(.system(size: 12))
-                    .onSubmit { commitProject() }
             }
 
-            NoteEditor(itemId: item.id, text: $note, onCommit: commitNote)
+            NoteEditor(itemId: item.id, text: noteBinding, onCommit: {})
 
             HStack(spacing: 8) {
                 if item.status == .trashed {
@@ -511,7 +545,6 @@ private struct DetailEditor: View {
                     Spacer()
 
                     Button(role: .destructive) {
-                        commitAll()
                         _ = store.setStatus(id: item.id, .trashed)
                     } label: {
                         Label("Move to Trash", systemImage: "trash")
@@ -522,44 +555,6 @@ private struct DetailEditor: View {
             Spacer(minLength: 0)
         }
         .padding(24)
-        .onAppear { hydrate() }
-        .onChange(of: item.id) { _ in hydrate() }
-        .onDisappear { commitAll() }
-    }
-
-    private func hydrate() {
-        title = item.title
-        note = item.note ?? ""
-        project = item.project ?? ""
-        loaded = true
-    }
-
-    private func commitTitle() {
-        guard loaded else { return }
-        let t = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !t.isEmpty, t != item.title else { return }
-        _ = store.update(id: item.id, title: t)
-    }
-
-    private func commitProject() {
-        guard loaded else { return }
-        let p = project.trimmingCharacters(in: .whitespacesAndNewlines)
-        let newValue: String? = p.isEmpty ? nil : p
-        guard newValue != item.project else { return }
-        _ = store.update(id: item.id, project: .some(newValue))
-    }
-
-    private func commitNote() {
-        guard loaded else { return }
-        let newNote: String? = note.isEmpty ? nil : note
-        guard newNote != item.note else { return }
-        _ = store.update(id: item.id, note: .some(newNote))
-    }
-
-    private func commitAll() {
-        commitTitle()
-        commitProject()
-        commitNote()
     }
 
     private var statusBadge: some View {

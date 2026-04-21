@@ -67,6 +67,28 @@ EXAMPLES:
     trackie note 3f8a "turned out to be a caching issue, see commit abc123"
 """
 
+// MARK: - Input normalization
+
+/// The shell hands us `\n` as two literal characters (backslash + n) when a
+/// user types `trackie update <id> --note "line 1\nline 2"`. Persisting that
+/// as-is means the UI renders the literal backslash-n instead of a line
+/// break (issue #6). Expand the handful of common C-style escapes here so
+/// notes typed at the command line behave how people expect.
+///
+/// A lone `\\` (two backslashes) in input means the user wanted a literal
+/// backslash, so it's preserved first via a placeholder before the single-
+/// backslash sequences are expanded.
+func expandNoteEscapes(_ s: String) -> String {
+    guard s.contains("\\") else { return s }
+    let placeholder = "\u{0000}BACKSLASH\u{0000}"
+    return s
+        .replacingOccurrences(of: "\\\\", with: placeholder)
+        .replacingOccurrences(of: "\\n", with: "\n")
+        .replacingOccurrences(of: "\\t", with: "\t")
+        .replacingOccurrences(of: "\\r", with: "\r")
+        .replacingOccurrences(of: placeholder, with: "\\")
+}
+
 // MARK: - Arg parsing
 
 struct ParsedArgs {
@@ -122,7 +144,7 @@ func parseArgs() -> ParsedArgs {
             }
         case "-n", "--note":
             i += 1
-            if i < args.count { p.note = args[i] }
+            if i < args.count { p.note = expandNoteEscapes(args[i]) }
         case "--priority":
             i += 1
             if i < args.count, let v = Int(args[i]) { p.priority = v }
@@ -372,7 +394,10 @@ func run() async {
 
     case "note", "append-note":
         guard let id = args.positionals.first else { die("note requires an id") }
-        var text = args.positionals.dropFirst().joined(separator: " ")
+        // args.positionals is the only path that hasn't already been
+        // normalized (the --note flag is expanded at parse time, and
+        // stdin bytes are taken as-is on purpose).
+        var text = expandNoteEscapes(args.positionals.dropFirst().joined(separator: " "))
         if text.isEmpty, let piped = readStdin() { text = piped }
         if text.isEmpty, let n = args.note { text = n }
         if text.isEmpty {
