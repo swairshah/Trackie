@@ -101,6 +101,8 @@ struct MainWindowView: View {
 
     private var sidebar: some View {
         VStack(spacing: 0) {
+            brandHeader
+
             List(selection: selectionBinding) {
                 Section {
                     ForEach(pendingItems) { item in
@@ -171,6 +173,67 @@ struct MainWindowView: View {
             addRow
         }
     }
+
+    /// Small "Trackie" wordmark + icon header sitting above the queue
+    /// list. The NSWindow hides its native title text, so this is the
+    /// only place the app's own brand shows up inside the window.
+    ///
+    /// The icon is loaded as an `NSImage` with `isTemplate = true` so
+    /// macOS inverts it for dark mode. `Image("MenuBarIcon")` won't
+    /// work: SwiftPM puts the asset catalog in `Trackie_Trackie.bundle`
+    /// rather than the main bundle, so we resolve it through
+    /// `Bundle.module` the same way `MenuBarLabel` does.
+    private var brandHeader: some View {
+        HStack(spacing: 10) {
+            if let icon = Self.brandIcon {
+                // `isTemplate = true` on the NSImage means macOS tints it
+                // with the current label color, so the icon stays visible
+                // in both light and dark mode without needing our own
+                // foregroundStyle. Don't wrap it in a tint modifier — that
+                // can interact badly with template rendering in SwiftUI.
+                Image(nsImage: icon)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 36, height: 36)
+            }
+            Text("Trackie")
+                .font(.system(size: 20, weight: .semibold))
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 14)
+        // fullSizeContentView means content extends under the title bar /
+        // traffic lights. Enough top-pad to clear the stoplights (~28pt
+        // chrome) without leaving dead space above the brand row.
+        .padding(.top, 8)
+        .padding(.bottom, 6)
+    }
+
+    private static let brandIcon: NSImage? = {
+        let subdirs: [String?] = [nil, "Resources", "Assets.xcassets/MenuBarIcon.imageset"]
+        func find(_ name: String) -> URL? {
+            for sub in subdirs {
+                if let url = Bundle.module.url(forResource: name, withExtension: "png", subdirectory: sub) {
+                    return url
+                }
+            }
+            return nil
+        }
+        func rep(at url: URL) -> NSBitmapImageRep? {
+            (try? Data(contentsOf: url)).flatMap(NSBitmapImageRep.init(data:))
+        }
+        // Load @1x and @2x as separate reps so macOS picks the crisp one at
+        // the 36pt render size on retina displays.
+        guard let url1x = find("menubar"), let rep1x = rep(at: url1x) else { return nil }
+        rep1x.size = NSSize(width: 36, height: 36)
+        let image = NSImage(size: NSSize(width: 36, height: 36))
+        image.addRepresentation(rep1x)
+        if let url2x = find("menubar@2x"), let rep2x = rep(at: url2x) {
+            rep2x.size = NSSize(width: 36, height: 36)
+            image.addRepresentation(rep2x)
+        }
+        image.isTemplate = true
+        return image
+    }()
 
     /// Clearly-style small-caps section header with a subtle trailing count.
     private func sectionHeader(_ title: String, count: Int) -> some View {
