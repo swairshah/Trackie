@@ -2,6 +2,8 @@
 
 __Your personal issue tracker that you and your coding agents share.__
 
+![Trackie main window](assets/screenshot-main.png)
+
 ```bash
 brew install --cask swairshah/tap/trackie
 ```
@@ -46,6 +48,8 @@ Click the rolodex icon in the menubar to pop the dropdown. From there you can:
 - See the most recent open items (or all of them when you expand)
 - Check one off, bump it up/down the queue, or scratch it
 - Click **Open** (or double-click any row) to bring up the full window
+
+<img src="assets/screenshot-menubar.png" alt="Trackie menubar dropdown" width="420"/>
 
 In the full window you get:
 
