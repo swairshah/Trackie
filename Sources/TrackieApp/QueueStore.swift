@@ -203,9 +203,9 @@ final class QueueStore: ObservableObject {
         return removed
     }
 
-    // Reorder via IndexSet (used by SwiftUI .onMove)
-    func onMove(from source: IndexSet, to destination: Int) {
-        items.move(fromOffsets: source, toOffset: destination)
+    // Reorder pending rows from the filtered queue section.
+    func onMovePending(from source: IndexSet, to destination: Int) {
+        guard items.moveItems(withStatus: .pending, from: source, to: destination) else { return }
         scheduleSave()
     }
 }
