@@ -112,7 +112,7 @@ struct MainWindowView: View {
                             .listRowInsets(EdgeInsets(top: 1, leading: 6, bottom: 1, trailing: 6))
                     }
                     .onMove { src, dest in
-                        store.onMove(from: src, to: dest)
+                        store.onMovePending(from: src, to: dest)
                     }
                     .onDelete { offsets in
                         for idx in offsets {

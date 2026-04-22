@@ -22,3 +22,27 @@ final class TrackieClientTests: XCTestCase {
         XCTAssertEqual(back.project, "trackie")
     }
 }
+
+final class TrackieOrderingTests: XCTestCase {
+    func testMovePendingItemsUsesFilteredOffsets() {
+        var items = [
+            TrackieItem(title: "done", status: .done),
+            TrackieItem(title: "one", status: .pending),
+            TrackieItem(title: "scratched", status: .scratched),
+            TrackieItem(title: "two", status: .pending),
+            TrackieItem(title: "three", status: .pending),
+            TrackieItem(title: "trashed", status: .trashed),
+        ]
+
+        items.moveItems(withStatus: .pending, from: IndexSet(integer: 2), to: 0)
+
+        XCTAssertEqual(items.map(\.title), [
+            "done",
+            "three",
+            "scratched",
+            "one",
+            "two",
+            "trashed",
+        ])
+    }
+}
