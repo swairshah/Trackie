@@ -51,9 +51,9 @@ struct MainWindowView: View {
             // Enter: jump into note editor (any status).
             Button("") { enterEditAction() }
                 .keyboardShortcut(.return, modifiers: [])
-            // Cmd+Delete: pending/done/scratched → trash, trashed → pending.
+            // Shift+Delete: pending/done/scratched → trash, trashed → pending.
             Button("") { trashAction() }
-                .keyboardShortcut(.delete, modifiers: .command)
+                .keyboardShortcut(.delete, modifiers: .shift)
         }
         .buttonStyle(.plain)
         .frame(width: 0, height: 0)
