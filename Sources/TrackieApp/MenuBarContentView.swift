@@ -39,7 +39,9 @@ struct MenuBarContentView: View {
         case .pending:
             return store.items.filter { $0.status == .pending }
         case .done:
-            return store.items.filter { $0.status == .done }
+            return store.items
+                .filter { $0.status == .done }
+                .sortedByMostRecentlyCompleted()
         case .all:
             return store.items.filter { $0.status != .trashed }
         case .trashed:

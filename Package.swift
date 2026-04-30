@@ -4,7 +4,8 @@ import PackageDescription
 let package = Package(
     name: "Trackie",
     platforms: [
-        .macOS(.v13)
+        .macOS(.v13),
+        .iOS(.v16)
     ],
     products: [
         .executable(name: "Trackie", targets: ["Trackie"]),
@@ -13,6 +14,7 @@ let package = Package(
         // overwrite each other in the shared build folder. `build-app.sh`
         // installs this as `trackie` on the user's PATH.
         .executable(name: "trackiectl", targets: ["TrackieCLI"]),
+        .library(name: "TrackieClient", targets: ["TrackieClient"]),
     ],
     dependencies: [
         .package(url: "https://github.com/gonzalezreal/swift-markdown-ui", from: "2.4.0"),

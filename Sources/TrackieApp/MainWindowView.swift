@@ -51,9 +51,9 @@ struct MainWindowView: View {
             // Enter: jump into note editor (any status).
             Button("") { enterEditAction() }
                 .keyboardShortcut(.return, modifiers: [])
-            // Cmd+Delete: pending/done/scratched → trash, trashed → pending.
+            // Shift+Delete: pending/done/scratched → trash, trashed → pending.
             Button("") { trashAction() }
-                .keyboardShortcut(.delete, modifiers: .command)
+                .keyboardShortcut(.delete, modifiers: .shift)
         }
         .buttonStyle(.plain)
         .frame(width: 0, height: 0)
@@ -256,7 +256,9 @@ struct MainWindowView: View {
         store.items.filter { $0.status == .pending }
     }
     private var doneItems: [TrackieItem] {
-        store.items.filter { $0.status == .done }
+        store.items
+            .filter { $0.status == .done }
+            .sortedByMostRecentlyCompleted()
     }
     private var scratchedItems: [TrackieItem] {
         store.items.filter { $0.status == .scratched }

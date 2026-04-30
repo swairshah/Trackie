@@ -112,8 +112,10 @@ final class QueueStore: ObservableObject {
 
     func setStatus(id: UUID, _ status: TrackieStatus) -> TrackieItem? {
         guard let idx = items.firstIndex(where: { $0.id == id }) else { return nil }
+        let now = Date()
         items[idx].status = status
-        items[idx].updatedAt = Date()
+        items[idx].updatedAt = now
+        items[idx].completedAt = status == .done ? now : nil
         scheduleSave()
         return items[idx]
     }

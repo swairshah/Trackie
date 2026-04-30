@@ -24,6 +24,35 @@ final class TrackieClientTests: XCTestCase {
 }
 
 final class TrackieOrderingTests: XCTestCase {
+    func testDoneItemsCanBeSortedNewestCompletedFirst() {
+        let now = Date(timeIntervalSince1970: 1_000)
+        let older = TrackieItem(
+            title: "older done",
+            status: .done,
+            createdAt: now.addingTimeInterval(-30),
+            updatedAt: now.addingTimeInterval(-1),
+            completedAt: now.addingTimeInterval(-10)
+        )
+        let newest = TrackieItem(
+            title: "newest done",
+            status: .done,
+            createdAt: now.addingTimeInterval(-40),
+            updatedAt: now.addingTimeInterval(-20),
+            completedAt: now
+        )
+        let middle = TrackieItem(
+            title: "middle done",
+            status: .done,
+            createdAt: now.addingTimeInterval(-20),
+            updatedAt: now.addingTimeInterval(-2),
+            completedAt: now.addingTimeInterval(-5)
+        )
+
+        let sorted = [older, newest, middle].sortedByMostRecentlyCompleted()
+
+        XCTAssertEqual(sorted.map(\.title), ["newest done", "middle done", "older done"])
+    }
+
     func testMovePendingItemsUsesFilteredOffsets() {
         var items = [
             TrackieItem(title: "done", status: .done),

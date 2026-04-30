@@ -1,5 +1,20 @@
 import Foundation
 
+public extension Sequence where Element == TrackieItem {
+    /// Return completed items newest-first by completion time, falling back to
+    /// the last update timestamp for items saved before completion timestamps existed.
+    func sortedByMostRecentlyCompleted() -> [TrackieItem] {
+        sorted {
+            let lhsCompletedAt = $0.completedAt ?? $0.updatedAt
+            let rhsCompletedAt = $1.completedAt ?? $1.updatedAt
+            if lhsCompletedAt != rhsCompletedAt {
+                return lhsCompletedAt > rhsCompletedAt
+            }
+            return $0.createdAt > $1.createdAt
+        }
+    }
+}
+
 public extension Array where Element == TrackieItem {
     @discardableResult
     mutating func moveItems(withStatus status: TrackieStatus, from source: IndexSet, to destination: Int) -> Bool {
