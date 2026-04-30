@@ -21,6 +21,7 @@ public struct TrackieItem: Codable, Identifiable, Hashable, Sendable {
     public var pid: Int32?
     public var createdAt: Date
     public var updatedAt: Date
+    public var completedAt: Date?
 
     public init(
         id: UUID = UUID(),
@@ -33,7 +34,8 @@ public struct TrackieItem: Codable, Identifiable, Hashable, Sendable {
         sessionId: String? = nil,
         pid: Int32? = nil,
         createdAt: Date = Date(),
-        updatedAt: Date = Date()
+        updatedAt: Date = Date(),
+        completedAt: Date? = nil
     ) {
         self.id = id
         self.title = title
@@ -46,6 +48,7 @@ public struct TrackieItem: Codable, Identifiable, Hashable, Sendable {
         self.pid = pid
         self.createdAt = createdAt
         self.updatedAt = updatedAt
+        self.completedAt = completedAt
     }
 }
 

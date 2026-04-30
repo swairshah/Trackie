@@ -256,7 +256,9 @@ struct MainWindowView: View {
         store.items.filter { $0.status == .pending }
     }
     private var doneItems: [TrackieItem] {
-        store.items.filter { $0.status == .done }
+        store.items
+            .filter { $0.status == .done }
+            .sortedByMostRecentlyCompleted()
     }
     private var scratchedItems: [TrackieItem] {
         store.items.filter { $0.status == .scratched }
