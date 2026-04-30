@@ -2,11 +2,13 @@
 
 __Your personal issue tracker that you and your coding agents share.__
 
-![Trackie main window](assets/screenshot-main.png)
+**Install:** [Download the DMG](https://github.com/swairshah/Trackie/releases/download/v0.3.2/Trackie-0.3.2.dmg) or install with Homebrew:
 
 ```bash
 brew install --cask swairshah/tap/trackie
 ```
+
+![Trackie main window](assets/screenshot-main.png)
 
 A tiny menubar app (plus a `trackie` CLI) that gives every coding agents like Codex, Cursor, Claude Code, pi.dev etc. the same
 place to push work, check what's open, and mark things done.
@@ -33,7 +35,7 @@ It's the missing "shared notepad" between you and your agents.
 brew install --cask swairshah/tap/trackie
 ```
 
-Or grab the DMG directly from the [Releases page](https://github.com/swairshah/Trackie/releases).
+Or grab the DMG directly from the [latest release](https://github.com/swairshah/Trackie/releases/latest).
 
 The cask installs two things for you:
 
