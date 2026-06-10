@@ -40,7 +40,8 @@ COMMANDS:
     clear --all                 Clear EVERYTHING (destructive)
 
     install-agent-context       Write the Trackie "how to use me" block into
-                                CLAUDE.md / AGENTS.md / .cursor/rules/ so any
+                                CLAUDE.md / AGENTS.md / .codex/AGENTS.md /
+                                .cursor/rules/ so any
                                 agent running in this directory knows Trackie
                                 is available.
         -g, --global            Target home-level configs instead of cwd

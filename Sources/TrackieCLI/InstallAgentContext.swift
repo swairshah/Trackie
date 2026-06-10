@@ -14,40 +14,37 @@ private let agentContextBlock = """
 ## Trackie — shared issue tracker
 
 Trackie is a local, menubar-resident issue tracker shared between the user and
-every coding agent on this machine. Items pushed here let the user see work
-you've queued up, are working on, or completed — even after your session ends.
+every coding agent on this machine. Use it as a durable backlog for substantial
+work that may span long sessions, multiple days, or handoffs between agents.
 
 The `trackie` CLI is already installed on `PATH` (via
 `brew install --cask swairshah/tap/trackie`).
 
-### When to push to Trackie
+### How to use Trackie
 
-- **Deferred work**: if you discover a follow-up while solving another task,
-  file it instead of silently dropping it on the floor.
-- **Non-trivial in-progress work**: when starting a task that will take more
-  than a few tool calls, add it so the user can see what you're working on.
-- **Questions / decisions pending the user**: add an item so it doesn't get
-  buried in the transcript.
+- Prefer reading first: run `trackie list --json` when starting substantial
+  work so you know what is already tracked and avoid creating duplicates.
+- Add items only for large, durable work: multi-session projects, investigations
+  that may continue later, risky migrations, or decisions blocked on the user.
+- Don't add routine tasks, small fixes, quick follow-ups, ordinary test runs,
+  or anything you expect to finish in the current session.
 
-Don't push trivia ("ran the tests"). Push things the user genuinely benefits
-from seeing later.
+Trackie is not a progress log. If you add an item, keep notes concise and mark
+it `done` only when the tracked work is actually complete.
 
 ### Commands
 
 ```bash
 trackie add "Investigate flaky login test" --project auth --note "see auth_test.py"
-trackie list                 # open items
-trackie list --json          # machine-readable
-trackie note 3f8a "found it — race in the token refresh"
-                             # append more context without clobbering prior notes
-trackie done 3f8a            # mark done by 8-char id prefix
+trackie list --json          # read existing items before adding new ones
+trackie note 3f8a "root cause is likely token refresh timing"
+trackie done 3f8a            # mark complete by id prefix
 trackie scratch 3f8a         # drop without marking complete
 ```
 
 Always tag `--project <name>` when you're inside a project directory, and
 `--session-id <id>` with your agent session identifier when available.
-Before finishing a coherent unit of work, run `trackie list --json` and mark
-the items you actually completed as `done`.
+Before finishing, update only the Trackie items you materially worked on.
 
 \(agentContextEndMarker)
 """
@@ -81,8 +78,15 @@ func installAgentContext(global: Bool, dryRun: Bool, quiet: Bool) {
             label: "Claude Code (global)",
             createIfMissing: true
         ))
-        // Codex / Aider / OpenAI tooling: ~/AGENTS.md is uncommon, but a
-        // per-user copy is still useful — users symlink it into projects.
+        // Codex: ~/.codex/AGENTS.md
+        let codexDir = home.appendingPathComponent(".codex", isDirectory: true)
+        targets.append(AgentTarget(
+            path: codexDir.appendingPathComponent("AGENTS.md"),
+            label: "Codex (global)",
+            createIfMissing: true
+        ))
+        // Aider / OpenAI tooling: ~/AGENTS.md is uncommon, but a per-user
+        // copy is still useful — users symlink it into projects.
         targets.append(AgentTarget(
             path: home.appendingPathComponent("AGENTS.md"),
             label: "AGENTS.md (global)",
@@ -142,7 +146,7 @@ func installAgentContext(global: Bool, dryRun: Bool, quiet: Bool) {
             "trackie install-agent-context: no agent files found in \(cwd.path).\n".data(using: .utf8)!
         )
         FileHandle.standardError.write(
-            "Hint: run with --global to drop the Trackie block into your home-level agent configs, or create one of CLAUDE.md / AGENTS.md / .cursor/rules/trackie.mdc first.\n".data(using: .utf8)!
+            "Hint: run with --global to drop the Trackie block into your home-level agent configs, or create one of CLAUDE.md / AGENTS.md / .cursor/rules/trackie.mdc / .pi/agent/AGENTS.md first.\n".data(using: .utf8)!
         )
         exit(1)
     }

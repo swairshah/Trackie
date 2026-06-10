@@ -103,7 +103,8 @@ popular coding agent reads a conventional file:
 | Agent | File it reads |
 |-------|---------------|
 | Claude Code | `CLAUDE.md` (project) or `~/.claude/CLAUDE.md` (global) |
-| Codex / Aider / most OpenAI tooling | `AGENTS.md` |
+| Codex | `AGENTS.md` (project) or `~/.codex/AGENTS.md` (global) |
+| Aider / most OpenAI tooling | `AGENTS.md` |
 | Cursor | `.cursor/rules/*.mdc` |
 | pi.dev | `.pi/agent/AGENTS.md` (project) or `~/.pi/agent/AGENTS.md` (global) |
 | Others | usually one of the above |
